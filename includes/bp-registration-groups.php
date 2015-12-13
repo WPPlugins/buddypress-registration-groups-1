@@ -8,6 +8,8 @@ add_action( 'wp_enqueue_scripts', 'bp_registration_groups_enqueue_scripts' );
 function bp_registration_groups_enqueue_scripts() {
 	wp_register_style( 'bp_registration_groups_styles', plugins_url('/styles.css', __FILE__) );
  	wp_enqueue_style( 'bp_registration_groups_styles' );
+
+	//wp_register_script('bp_registration_groups_scripts', plugins_url('scripts.js', __FILE__), array('jquery'), '', true);
 }
 
 if (is_multisite()) { add_filter( 'bp_signup_usermeta', 'bp_registration_groups_save' ); }
@@ -38,6 +40,9 @@ function bp_registration_groups(){
 	$bp_registration_groups_display_order_options = array( 'active', 'newest', 'popular', 'random', 'alphabetical', 'most-forum-topics', 'most-forum-posts' );
 	$bp_registration_groups_display_order = ( isset( $bp_registration_groups_options['bp_registration_groups_display_order'] ) && in_array($bp_registration_groups_options['bp_registration_groups_display_order'], $bp_registration_groups_display_order_options, true) ) ? $bp_registration_groups_options['bp_registration_groups_display_order'] : 'alphabetical';
 
+	// set $bp_registration_groups_display_as to 'reg_groups_list_multiselect' if the stored value is 2; set to 'reg_groups_list' otherwise
+	$bp_registration_groups_display_as = ( isset( $bp_registration_groups_options['bp_registration_groups_display_as'] ) && $bp_registration_groups_options['bp_registration_groups_display_as'] != '1' ) ? 'reg_groups_list_multiselect' : 'reg_groups_list';
+
 	// set $bp_registration_groups_show_private_groups to array( 'public', 'private' ) if the stored option is "1" or array( 'public', 'private' ) otherwise
 	$bp_registration_groups_show_private_groups = ( !isset($bp_registration_groups_options['bp_registration_groups_show_private_groups']) || $bp_registration_groups_options['bp_registration_groups_show_private_groups'] != '1' ) ? array( 'public' ) : array ( 'public', 'private' );
 
@@ -48,7 +53,7 @@ function bp_registration_groups(){
 		<div class="register-section" id="registration-groups-section">
 			<h4 class="reg_groups_title"><?php _e( $bp_registration_groups_title, 'buddypress-registration-groups-1' ); ?></h3>
 			<p class="reg_groups_description"><?php _e( $bp_registration_groups_description.':', 'buddypress-registration-groups-1' ); ?></p>
-			<ul class="reg_groups_list">
+			<ul class="<?php _e( $bp_registration_groups_display_as, 'buddypress-registration-groups-1' ); ?>">
 				<?php $i = 0; $l = 0; ?>
 				<?php if ( bp_has_groups('type='.$bp_registration_groups_display_order.'&per_page='.groups_get_total_group_count() ) ) : while ( bp_groups() && $l < $bp_registration_groups_number_displayed ) : bp_the_group(); ?>
 					<?php if ( in_array( bp_get_group_status(), $bp_registration_groups_show_private_groups, true ) ) { ?>
@@ -234,6 +239,14 @@ class BPRegistrationGroupsSettingsPage
             'bp_registration_groups_display_options_section_id'
         );
 
+				add_settings_field(
+						'bp_registration_groups_display_as',
+						'Display As',
+						array( $this, 'bp_registration_groups_display_as_callback' ),
+						'bp-registration-groups-settings-admin',
+						'bp_registration_groups_display_options_section_id'
+				);
+
         add_settings_field(
             'bp_registration_groups_show_private_groups',
             'Show Private Groups',
@@ -267,6 +280,9 @@ class BPRegistrationGroupsSettingsPage
 
         if( isset( $input['bp_registration_groups_display_order'] ) )
             $new_input['bp_registration_groups_display_order'] = sanitize_text_field( $input['bp_registration_groups_display_order'] );
+
+				if( isset( $input['bp_registration_groups_display_as'] ) )
+            $new_input['bp_registration_groups_display_as'] = absint( $input['bp_registration_groups_display_as'] );
 
         if( isset( $input['bp_registration_groups_show_private_groups'] ) )
             $new_input['bp_registration_groups_show_private_groups'] = absint( $input['bp_registration_groups_show_private_groups'] );
@@ -361,6 +377,24 @@ class BPRegistrationGroupsSettingsPage
     	printf(
 			'<input type="radio" %s name="bp_registration_groups_option_handle[bp_registration_groups_display_order]" value="most-forum-posts"> Most Forum Posts',
 			isset($this->options['bp_registration_groups_display_order']) && $this->options['bp_registration_groups_display_order'] == 'most-forum-posts' ? 'checked="checked"' : ''
+    	);
+    }
+
+		/**
+     * Get the settings option array and print one of its values
+     */
+    public function bp_registration_groups_display_as_callback()
+    {
+    	printf(
+			'<input type="radio" %s name="bp_registration_groups_option_handle[bp_registration_groups_display_as]" value="1"> Checkboxes (default)',
+			!isset($this->options['bp_registration_groups_display_as_checkboxes']) || isset($this->options['bp_registration_groups_display_as']) && $this->options['bp_registration_groups_display_as'] == '1' ? 'checked="checked"' : ''
+    	);
+
+    	_e( '<br />' );
+
+    	printf(
+			'<input type="radio" %s name="bp_registration_groups_option_handle[bp_registration_groups_display_as]" value="2"> Multiselect',
+			isset($this->options['bp_registration_groups_display_as']) && $this->options['bp_registration_groups_display_as'] == '2' ? 'checked="checked"' : ''
     	);
     }
 
