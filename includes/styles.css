@@ -47,12 +47,62 @@
 }
 
 /**
+ * Inline error shown when a group selection is required but none was made.
+ * Matches the look of the BuddyPress signup field errors; themes that style
+ * .error take precedence.
+ */
+#registration-groups-section .reg_groups_error {
+	border-left: 4px solid #b32d2e;
+	background: #fcf0f1;
+	color: #b32d2e;
+	padding: 8px 12px;
+	margin: 0 0 10px;
+}
+
+/**
  * Auto-join groups shown as locked entries.
  */
 .reg_groups_automatic {
 	font-style: italic;
 	color: gray;
 	font-size: 0.9em;
+}
+
+/**
+ * The fieldsets exist for assistive technology — they tell screen readers
+ * which question each group of checkboxes/radios answers. Visually they are
+ * invisible wrappers, so strip the browser/theme fieldset chrome.
+ */
+#buddypress #registration-groups-section .reg_groups_fieldset,
+#registration-groups-section .reg_groups_fieldset {
+	border: 0;
+	padding: 0;
+	margin: 0;
+	min-width: 0;
+	background: transparent;
+}
+
+/**
+ * Curated group sections: each configured section renders as its own titled
+ * block inside the groups section.
+ */
+#buddypress #registration-groups-section .reg_groups_section,
+#registration-groups-section .reg_groups_section {
+	margin: 0 0 12px;
+}
+
+#buddypress .reg_groups_section_title,
+.reg_groups_section_title {
+	margin: 0 0 2px;
+	font-size: 1.2em;
+	font-weight: 600;
+}
+
+.reg_groups_section_description {
+	margin: 0 0 6px;
+	font-size: 0.85em;
+	font-style: italic;
+	color: gray;
 }
 
 /**
