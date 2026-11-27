@@ -1,15 +1,13 @@
 === BuddyPress Registration Groups ===
-Plugin URI: https://wordpress.org/plugins/buddypress-registration-groups-1/
-Version: 1.2.1
-Tags: wordpress, multisite, buddypress, groups, registration, autojoin
-Requires at least: WordPress 3.7.1
-Tested up to: WordPress 4.9.2
-License: GNU/GPL 2
-Author: Eric Johnson
-Author URI: http://hardlyneutral.com/
 Contributors: hardlyneutral
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TYJT5VMV8YMVQ
-Stable tag: Release_1.2.1
+Tags: buddypress, groups, registration, autojoin, multisite
+Requires at least: 6.1
+Tested up to: 7.2
+Requires PHP: 7.4
+Stable tag: 1.6.1
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Allows a new BuddyPress user to select groups to join during the registration process.
 
@@ -23,9 +21,17 @@ This plugin is built to display BuddyPress groups on the new user registration p
 
 New users will automatically join any of the groups selected during the registration process.
 
-Options are available in the admin area to configure the title of the groups list on the registration page, the
-description of the groups list, whether private groups are visible to new users, the order in which groups are
-displayed, and how many groups will be visible.
+Options are available in the admin area to configure the title of the groups list on the registration page, the description of the groups list, whether private groups are visible to new users, the order in which groups are displayed, and how many groups will be visible.
+
+Per-group options let you fine-tune individual groups: hide a group from the registration form, pre-check a group by default, or mark a group as auto-join so every new user becomes a member automatically. Auto-join groups can be left off the form entirely or shown as pre-checked, locked entries labeled "(automatic)".
+
+An optional "Require Group Selection" setting (off by default) prevents signup from completing until the registrant selects at least one group. The requirement is validated on the server when the form is submitted, works with both checkbox and radio button display modes, and is skipped automatically if no selectable groups exist so registration is never blocked by a misconfiguration.
+
+Optional Group Sections let you organize the registration form into multiple titled sections — for example "Interests" and "Regions" — each with its own description and its own curated set of groups. While at least one section is configured, the form offers only the groups you assigned, each in exactly one section, and with the radio button display registrants can select one group per section. Leave the sections empty to keep the classic single list; existing installations render exactly as before.
+
+The `[bp_registration_groups_join]` shortcode lets logged-in members join groups after registration, for example on a welcome page later in onboarding, or on sites where members sign up through something other than the BuddyPress registration form. It offers the same curated groups as the registration form, marks the groups a member already belongs to, joins public groups right away, and sends a membership request for private groups (when "Show Private Groups" is on). Logged-out visitors see a log-in link.
+
+Requires BuddyPress with the Groups component enabled (BuddyPress 7.0 or newer recommended; tested with BuddyPress 14.5).
 
 == Installation ==
 
@@ -103,6 +109,97 @@ Here is a list of the current selectors used in `includes/styles.css`.
 }
 `
 
+**Accessibility fieldsets (invisible wrappers naming each group of inputs for screen readers):**
+`
+#buddypress #registration-groups-section .reg_groups_fieldset,
+#registration-groups-section .reg_groups_fieldset {
+	border: 0;
+	padding: 0;
+	margin: 0;
+	min-width: 0;
+	background: transparent;
+}
+`
+
+**Curated group sections:**
+`
+#buddypress #registration-groups-section .reg_groups_section,
+#registration-groups-section .reg_groups_section {
+	margin: 0 0 12px;
+}
+
+#buddypress .reg_groups_section_title,
+.reg_groups_section_title {
+	margin: 0 0 2px;
+	font-size: 1.2em;
+	font-weight: 600;
+}
+
+.reg_groups_section_description {
+	margin: 0 0 6px;
+	font-size: 0.85em;
+	font-style: italic;
+	color: gray;
+}
+`
+
+**Groups section - BP Nouveau template pack:**
+`
+#buddypress .layout-wrap #registration-groups-section {
+	float: none;
+	width: 100%;
+	flex: 1 100%;
+}
+`
+
+**Join Groups shortcode (the list reuses the item, checkbox, label, multiselect, and section selectors above):**
+`
+.reg_groups_join .reg_groups_fieldset {
+	border: 0;
+	padding: 0;
+	margin: 0 0 12px;
+	min-width: 0;
+	background: transparent;
+}
+
+.reg_groups_join ul.reg_groups_list,
+.reg_groups_join ul.reg_groups_list_multiselect {
+	margin: 0;
+	padding-left: 0;
+}
+
+.reg_groups_join ul.reg_groups_list_multiselect {
+	padding: 6px;
+}
+
+.reg_groups_status {
+	font-style: italic;
+	color: gray;
+	font-size: 0.9em;
+}
+
+.reg_groups_join .reg_groups_error {
+	border-left: 4px solid #b32d2e;
+	background: #fcf0f1;
+	color: #b32d2e;
+	padding: 8px 12px;
+	margin: 0 0 10px;
+}
+
+.reg_groups_join_results {
+	border-left: 4px solid #00a32a;
+	background: #edfaef;
+	padding: 8px 12px;
+	margin: 0 0 10px;
+}
+
+.reg_groups_join_results ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+`
+
 == Frequently Asked Questions ==
 
 = Does this plugin show Private groups? =
@@ -111,19 +208,136 @@ Yes! You can toggle private group visibility on and off in the admin section
 
 = Does this plugin show Hidden groups? =
 
-No, it does not. The BuddyPress core makes it a bit difficult to easily get these groups without being a logged in user. This might change in the future. If it does, hidden groups will be supported.
+No. Hidden groups are never displayed on the registration form. If you mark a hidden group as auto-join in the per-group options, new users join it silently at activation — its name is still never shown on the form.
+
+= Can I require new users to select a group? =
+
+Yes. Enable "Require Group Selection" on the plugin settings page. Signup then cannot be completed until the
+registrant selects at least one group offered on the form; an inline error appears next to the group list otherwise.
+Hidden and auto-join groups do not count toward the requirement. If no selectable groups exist, the requirement is
+skipped (and a warning is shown on the settings page) so registration is never locked. The requirement is enforced
+on the server for both the browser signup form and the BuddyPress REST signup endpoint.
+
+= Can I split the group list into more than one box, like "Interests" and "Regions"? =
+
+Yes. Use the "Group Sections" panel on the plugin settings page to create ordered sections, each with a title, an
+optional description, and the groups you assign to it. While at least one section exists, the registration form
+shows only assigned groups, grouped under their section headings; a group can live in only one section (the first
+section that lists it wins). Checkboxes allow any number of selections across sections, and radio buttons allow
+one selection per section. Selections from every section are combined and joined at activation, and the per-group
+Hide, Checked by default, and Auto-join settings still apply.
+
+= Does "Number of Groups to Display" limit which groups can be joined? =
+
+No — it only trims how many groups the form shows. With the Active, Popular, and Random display orders the visible
+subset changes between page loads, so the limit is not treated as an eligibility rule when a signup is validated.
+To make a specific group unselectable at registration, use the per-group Hide option (or leave it out of every
+Group Section).
+
+= Can members choose groups after registration? =
+
+Yes. Add the `[bp_registration_groups_join]` shortcode to any page (in the block editor, use a Shortcode block).
+Logged-in members see the groups the registration form offers, with "(member)" or "(request pending)" next to the ones
+that already apply, and can join the rest: public groups immediately, and private groups by a membership request that a
+group administrator approves. After submitting, the page reloads and lists what happened to each selected group, so
+refreshing it never sends the form again. Logged-out visitors see a message with a log-in link. The shortcode relies on
+BuddyPress's group permission checks, so it needs BuddyPress 6.0 or newer.
+
+The shortcode uses the Title, Description, Display Order, Show Private Groups, Number of Groups to Display, per-group
+Hide, and Group Sections settings, plus the checkbox styles from "Display As" (Radio Buttons shows as checkboxes).
+Require Group Selection, Checked by default, and Auto-Join Display apply only to registration, and auto-join groups are
+not listed. Submissions are protected by a nonce and only ever change the logged-in member's own memberships; group IDs
+the page does not offer are ignored.
+
+If you would rather let members browse every group, the built-in BuddyPress Groups directory already does that. The
+shortcode is for offering the same curated list as your registration form.
 
 = What if the plugin doesn't work? =
 
 Use the WordPress plugin support form (http://wordpress.org/support/plugin/buddypress-registration-groups-1). I only do this in my spare time, so don't expect a super quick response :)
 
+= Why don't I see the group list on the registration page? =
+
+Make sure BuddyPress is installed and active, the Groups component is enabled (Settings > BuddyPress > Components), and at least one public group exists. The plugin shows an admin notice when BuddyPress is active but the Groups component is disabled.
+
 == Screenshots ==
-1. Screenshot of the plugin showing groups as a list of checkboxes on the new user registration page.
-2. Screenshot of the plugin showing groups as a list of checkboxes in a scrollable container on the new user registration page.
-3. Screenshot of the plugin showing groups as a list of radio buttons on the new user registration page.
-4. Screenshot of the admin settings menu and options.
+1. Groups shown as a list of checkboxes on the new user registration page.
+2. Groups shown as a list of checkboxes in a scrollable container on the new user registration page.
+3. Groups shown as a list of radio buttons on the new user registration page.
+4. The admin settings page, including the per-group options table, the Group Sections editor, and the Join Groups Shortcode help.
+5. Per-group options in action: an auto-join group shown as a locked "(automatic)" entry and a group checked by default.
+6. The "Require Group Selection" setting in action: signup blocked with an inline error until at least one group is selected.
+7. Group Sections in action: the registration form organized into curated "Interests" and "Activities" sections, each with its own title, description, and assigned groups.
+8. The Join Groups shortcode on a page after registration: a public group joined, a private group requested, and the member's existing memberships marked.
 
 == Changelog ==
+= 1.6.1 =
+* Fix: remove manual line wrapping from the plugin description so WordPress.org renders prose as normal flowing paragraphs instead of inserting visible hard breaks.
+* Add a regression test that prevents hard-wrapped description paragraphs from returning.
+
+= 1.6.0 =
+* New: the `[bp_registration_groups_join]` shortcode lets logged-in members join groups after registration, from any page. Requested in the wordpress.org support forum.
+* The shortcode offers exactly the groups the registration form offers (the same eligibility rules, per-group Hide, and Group Sections), marks groups the member already belongs to or has asked to join, and reports what happened to each selection.
+* Public groups are joined right away. Private groups, when "Show Private Groups" is on, get a BuddyPress membership request for a group administrator to approve; they are never joined directly. BuddyPress's own permission checks apply, so banned members cannot rejoin.
+* Security: submissions require a nonce, only ever change the logged-in member's own memberships, and ignore any group ID the page does not offer (hidden, private while private groups are off, auto-join, unassigned to a section, or nonexistent), without naming it. After a submission the member is redirected back to the page (Post/Redirect/Get), so refreshing or navigating back cannot resend it, and a replayed submission is harmless anyway: existing memberships and pending requests are reported, not repeated.
+* Registration-only settings (Require Group Selection, Radio Buttons, Checked by default, Auto-Join Display) do not apply to the shortcode, and the signup and activation flow is unchanged.
+* The settings page has a new "Join Groups Shortcode" section explaining the shortcode, and a new screenshot shows it in action.
+* Expanded the regression suite (three new test files) and extended the test stubs to model the current user, nonces, memberships, membership requests, bans, and BuddyPress's group capabilities.
+
+= 1.5.2 =
+* Security and hardening follow-up to 1.5.1, after a second independent review found signup paths the browser-form hooks did not cover. Every fix was verified on a live WordPress 7.0 + BuddyPress 14.5 install with forged browser and REST submissions.
+* Security: signups created through the BuddyPress REST API are now held to the same rules as the browser form. "Require Group Selection" is enforced on REST signups (the REST endpoint does not run the browser form's validation, so this was previously bypassable), and REST group selections are validated and, in radio mode, capped exactly as on the form.
+* Fix: with a radio-button display, the "one choice" (or one choice per Group Section) rule is now enforced on the server, not just in the browser. A crafted submission can no longer join several groups from a single radio list.
+* Fix: a private group marked Auto-join with locked display on is no longer named on the registration form while "Show Private Groups" is off (it is still joined silently). A group marked both Hide and Auto-join is likewise never named. Both now match the settings help text.
+* Hardening: submitted group IDs — from the form, the REST API, and the settings screen alike — are parsed strictly (plain digit values only); forged payload shapes are dropped instead of being coerced into unrelated group IDs.
+* Hardening: the "Display As", "Show Private Groups", "Require Group Selection", and "Auto-Join Display" settings now store only their documented values, so a forged value cannot make the admin screen and the registration form disagree.
+* New: a `bp_registration_groups_join_failed` action fires if a group membership cannot be created at activation, so a silent failure can be logged, alerted, or retried.
+* Expanded the regression suite (four new test files) and upgraded the test stubs to model REST requests, hook priority and accepted-argument counts, and injectable membership-join failures.
+
+= 1.5.1 =
+* Hardening, bug-fix, and accessibility release following a full end-to-end audit of the signup flow on a live WordPress 7.0 + BuddyPress 14.5 install, including adversarial testing with forged form submissions.
+* Hardening: submitted group IDs are now parsed strictly (plain digit values only); forged payload shapes are dropped instead of being coerced into unrelated group IDs. The coerced IDs always had to pass the full eligibility checks, so this was never a way into a hidden or private group.
+* Fix: a group marked both Hide and Auto-join is no longer named as a locked "(automatic)" entry in the single-list display — it is joined silently, as the sections display and the settings help text always said.
+* Fix: the registration form now ignores BuddyPress's group-directory query-string arguments (?num=, ?grpage=, ?s=), which could resize or swap the configured group list.
+* Fix: with a display limit and a shifting order (Active, Popular, Random), a failed signup no longer loses the registrant's group selection on the re-rendered form — a still-eligible selection the requery left out is appended, checked.
+* Accessibility: each group list is now wrapped in an invisible fieldset named by the visible title, section titles and descriptions, and the inline required-selection error, so screen readers announce which question each checkbox or radio group answers. The visual layout is unchanged.
+* The "Display As" setting now stores only its three supported values, and the Title/Description fallback logic states its intent explicitly (an emptied field restores the advertised default, exactly as before).
+* Refreshed the translation template (.pot), which had not been regenerated since 1.3.0 and was missing every string added in 1.4.0 and 1.5.0.
+* Expanded the regression suite (six new test files) covering strict ID parsing, locked auto-join display in the single list, query-string override neutralization, selection preservation under display limits, and the require-selection and sections interactions.
+
+= 1.5.0 =
+* New: Group Sections. Organize the registration form into multiple ordered, titled sections (each with an optional description), and curate exactly which groups each section offers. Requested in the wordpress.org support forum.
+* While at least one section is configured, only assigned groups appear on the form; a group assigned to more than one section is kept in the first section (duplicates never render). No taxonomy plugin is required — groups are assigned explicitly.
+* With the radio button display, each section is its own radio group, so registrants can select one group per section; checkboxes allow any number of selections across sections. Selections from every section are sanitized, aggregated once into the signup meta, and joined at activation.
+* The per-group Hide, Checked by default, and Auto-join settings apply inside sections, and hidden, private (when not shown), or nonexistent groups are never exposed even when assigned to a section.
+* Existing installations are unaffected until sections are configured: with no sections defined, the single global list renders exactly as before.
+* Refreshed all screenshots on current WordPress/BuddyPress and added a seventh showing Group Sections in action; the settings screenshot now includes the Group Sections editor.
+
+= 1.4.0 =
+* New: "Require Group Selection" setting (off by default). When enabled, signup cannot be completed until the registrant selects at least one group, validated server-side on the BuddyPress signup flow (single site and multisite). Requested in the wordpress.org support forum.
+* An accessible inline error is shown next to the group list when the requirement is not met, and hidden, private (when not shown), nonexistent, and auto-join group IDs never satisfy it.
+* The registrant's group selections are now preserved when signup validation fails for any reason (previously the list reset to the admin defaults).
+* If the requirement is enabled but no selectable groups exist, it is skipped so registration is never blocked, and a warning is shown on the plugin settings page.
+* Added a regression test suite for the signup validation, signup meta, and group eligibility logic (in the tests directory of the source repository; not shipped in the plugin zip).
+* Refreshed the admin settings screenshot to include the new setting and added a sixth screenshot showing the inline error in action.
+
+= 1.3.0 =
+* Compatibility release. Tested as working with WordPress 7.0, BuddyPress 14.5, and PHP 8.4, on both single site and multisite.
+* New: per-group options. Hide individual groups from the registration form, pre-check groups by default, or mark groups as auto-join so every new user becomes a member automatically at activation. Auto-join groups can be left off the form or shown as pre-checked, locked entries labeled "(automatic)".
+* New: plugin icon artwork for the wordpress.org directory (in the .wordpress-org directory of the source repository).
+* Refreshed all screenshots on current WordPress/BuddyPress and added a fifth showing the per-group options in action. Screenshots moved to the wordpress.org assets directory and no longer ship inside the plugin zip.
+* Fixed group joining on single-site (non-multisite) installs. BuddyPress 14 stopped creating the user account at signup time, which caused group selections to be silently lost. Selections are now stored in the signup meta and applied when the account is activated — the same flow on single site and multisite.
+* Fixed the group list not appearing when the Extended Profiles component is disabled. The list now also hooks 'bp_before_registration_submit_buttons' as a fallback location.
+* Fixed the groups section being squeezed into a narrow column with the BP Nouveau template pack.
+* Security hardening: submitted group selections are now sanitized and validated against the groups the form actually offers, so crafted submissions can no longer auto-join hidden groups (or private groups when "Show Private Groups" is off).
+* Removed the "Most Forum Topics" and "Most Forum Posts" display orders; BuddyPress removed these years ago and silently sorted by activity instead. Saved settings using them are treated as "Active".
+* Groups are now queried with the modern BuddyPress 'status' argument and without a separate count query.
+* Fixed an admin settings bug where the "Display As" setting always rendered "Checkboxes Multiselect" as selected.
+* Fixed HTML validity and accessibility issues: mismatched heading tags, labels not linked to their inputs, and the "no groups" message nested inside the list element.
+* Escaped all output and sanitized all input per current WordPress plugin guidelines.
+* The stylesheet now loads only on the registration page and carries a version for cache busting.
+* Updated plugin headers and readme metadata (Requires PHP, License URI, tags, plain-version stable tag).
+
 = 1.2.1 =
 * Maintenance update.
 * Added CSS documentation to the readme.
@@ -223,6 +437,27 @@ Use the WordPress plugin support form (http://wordpress.org/support/plugin/buddy
 * First version!
 
 == Upgrade Notice ==
+
+= 1.6.1 =
+* Corrects the plugin-directory description formatting. Plugin behavior is unchanged. Safe to upgrade.
+
+= 1.6.0 =
+* Adds the optional `[bp_registration_groups_join]` shortcode so members can join groups after registration. No changes to registration unless you use it. Safe to upgrade.
+
+= 1.5.2 =
+* Security and hardening follow-up to 1.5.1: closes a REST-signup bypass of "Require Group Selection" and enforces radio-button limits on the server. No new settings and no visual changes. Recommended for all sites.
+
+= 1.5.1 =
+* Hardening, bug-fix, and accessibility release after a full end-to-end audit on live WordPress and BuddyPress. No new settings and no visual changes. Safe to upgrade.
+
+= 1.5.0 =
+* Adds optional Group Sections for organizing the registration form into multiple titled group lists. No behavior changes unless sections are configured. Safe to upgrade.
+
+= 1.4.0 =
+* Adds the optional "Require Group Selection" setting and preserves group selections when signup validation fails. No behavior changes unless the new setting is enabled. Safe to upgrade.
+
+= 1.3.0 =
+* Major compatibility release for current WordPress and BuddyPress. Fixes group joining on single-site installs, which had been broken since BuddyPress 14. Upgrade immediately.
 
 = 1.2.1 =
 * Maintenance update. No changes to core functionality. Safe to upgrade.
